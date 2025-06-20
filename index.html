@@ -11,12 +11,12 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Chosen Palette: Midnight Slate - Deep Blue/Gray, Cool Grays, with accents of Cyan and White -->
-    <!-- Application Structure Plan: A refined single-page dashboard. The structure remains thematic but with a more sophisticated layout. 1. A dynamic Hero section replaces the static overview. 2. A vertical, interactive flowchart for the System Architecture. 3. Test Results are presented in tabbed sections for better organization. 4. The Live Simulation dashboard is redesigned for a cleaner, more professional control panel feel. This structure enhances scannability and provides a more guided, premium user experience. -->
+    <!-- Application Structure Plan: A refined single-page dashboard. 1. A dynamic Hero section. 2. A visual, interactive diagram of the physical device using the provided image. 3. Tabbed sections for Test Results. 4. An interactive simulation dashboard. This new architecture section provides immediate visual context of the physical product, which is more intuitive than an abstract flowchart. -->
     <!-- Visualization & Content Choices: 
-        1. Ringkasan Proyek: Goal=Inform/Engage. Method=Dynamic cards with icons and a key metric display. Justification=More visually engaging and scannable than plain text blocks.
-        2. Arsitektur Sistem: Goal=Organize/Explain. Method=Vertical interactive HTML/CSS flowchart. Interaction=Clicking a stage reveals details. Justification=A flowchart is more intuitive for representing a process flow than a linear diagram.
-        3. Hasil Pengujian: Goal=Compare/Analyze. Method=Chart.js Bar/Line charts within a tabbed interface. Interaction=Switching tabs to view different test results. Justification=Tabs de-clutter the interface, allowing users to focus on one comparison at a time.
-        4. Simulasi Data Live: Goal=Explore/Relate. Method=Redesigned Chart.js gauges and line chart. Interaction=Sliders control chart values. Justification=The core interactive element is retained but presented in a cleaner, more visually appealing control panel layout.
+        1. Ringkasan Proyek: Goal=Inform/Engage. Method=Dynamic cards. Justification=Visually engaging and scannable.
+        2. Arsitektur Sistem: Goal=Explain/Orient. Method=Interactive annotated image diagram. Interaction=Clicking labels reveals component details. Justification=Using the actual product image provides powerful, real-world context that a flowchart cannot. It directly connects the user to the physical artifact.
+        3. Hasil Pengujian: Goal=Compare/Analyze. Method=Chart.js charts in a tabbed interface. Interaction=Switching tabs. Justification=De-clutters the UI.
+        4. Simulasi Data Live: Goal=Explore/Relate. Method=Interactive gauges and charts. Interaction=Sliders. Justification=Engages the user in active learning about the system's core principles.
         Library/Method=Tailwind CSS for layout, Chart.js for all data visualizations (Canvas-based).
     -->
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
@@ -72,21 +72,6 @@
             color: white;
             box-shadow: 0 4px 14px 0 rgba(8, 145, 178, 0.38);
         }
-        .architecture-step {
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-        .architecture-step.active {
-            border-color: #0891B2;
-            background-color: #F0FDFA;
-        }
-        .architecture-line {
-            width: 2px;
-            background-color: #E2E8F0;
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-        }
         .slider-thumb::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
@@ -103,7 +88,21 @@
             border-radius: 50%;
             cursor: pointer;
         }
-        
+        .annotation-dot {
+            transition: transform 0.2s, background-color 0.2s;
+        }
+        .annotation-label:hover .annotation-dot {
+            transform: scale(1.5);
+            background-color: #0891B2;
+        }
+        .annotation-label.active .annotation-dot {
+             transform: scale(1.5);
+             background-color: #0891B2;
+        }
+        .annotation-label.active span {
+            color: #0891B2;
+            font-weight: 700;
+        }
     </style>
 </head>
 <body class="antialiased">
@@ -113,14 +112,14 @@
             <div class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-slate-700 to-slate-900">ISOTRACK</div>
             <div class="hidden md:flex items-center space-x-8">
                 <a href="#overview" class="nav-link text-gray-600 font-medium">Ringkasan</a>
-                <a href="#architecture" class="nav-link text-gray-600 font-medium">Arsitektur</a>
+                <a href="#architecture" class="nav-link text-gray-600 font-medium">Visualisasi Alat</a>
                 <a href="#results" class="nav-link text-gray-600 font-medium">Hasil Uji</a>
                 <a href="#simulation" class="nav-link text-gray-600 font-medium">Simulasi</a>
             </div>
             <div class="md:hidden">
                 <select id="mobile-nav" class="w-full bg-white border border-gray-300 rounded-md p-2 text-sm">
                     <option value="#overview">Ringkasan</option>
-                    <option value="#architecture">Arsitektur</option>
+                    <option value="#architecture">Visualisasi Alat</option>
                     <option value="#results">Hasil Uji</option>
                     <option value="#simulation">Simulasi</option>
                 </select>
@@ -154,33 +153,36 @@
         </section>
 
         <section id="architecture" class="mb-20 md:mb-32 scroll-mt-20">
-            <h2 class="text-4xl font-bold text-center text-slate-900 mb-4">Arsitektur Aliran Data</h2>
-            <p class="text-center text-gray-600 mb-12 max-w-2xl mx-auto">Setiap langkah dalam sistem ISOTRACK dirancang untuk efisiensi dan keandalan, dari pengambilan data di lapangan hingga visualisasi interaktif. Klik setiap tahap untuk melihat detail perannya.</p>
-            <div class="flex flex-col md:flex-row gap-8">
-                <div class="w-full md:w-1/3">
-                    <div id="architecture-steps-container" class="space-y-4">
-                        <div class="architecture-step p-4 border-2 border-gray-200 rounded-lg" data-step="1">
-                            <span class="font-bold text-cyan-600">Tahap 1: Akuisisi Data</span>
-                            <p class="text-sm text-gray-500">Node Sensor di Lapangan</p>
-                        </div>
-                         <div class="architecture-step p-4 border-2 border-gray-200 rounded-lg" data-step="2">
-                            <span class="font-bold text-cyan-600">Tahap 2: Transmisi Nirkabel</span>
-                            <p class="text-sm text-gray-500">ESP-NOW ke Gateway</p>
-                        </div>
-                         <div class="architecture-step p-4 border-2 border-gray-200 rounded-lg" data-step="3">
-                            <span class="font-bold text-cyan-600">Tahap 3: Pengolahan Data</span>
-                            <p class="text-sm text-gray-500">Kalkulasi di Server</p>
-                        </div>
-                         <div class="architecture-step p-4 border-2 border-gray-200 rounded-lg" data-step="4">
-                            <span class="font-bold text-cyan-600">Tahap 4: Visualisasi</span>
-                            <p class="text-sm text-gray-500">Dasbor Pengguna</p>
-                        </div>
-                    </div>
+            <h2 class="text-4xl font-bold text-center text-slate-900 mb-4">Visualisasi Alat Terpasang</h2>
+            <p class="text-center text-gray-600 mb-12 max-w-2xl mx-auto">Lihat bagaimana perangkat ISOTRACK diimplementasikan di lapangan. Klik pada label komponen untuk memahami fungsi dari setiap bagian pada instalasi nyata.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                 <div class="relative">
+                    <img src="https://storage.googleapis.com/gemini-prod-us-central1-cbf2/images/20e290f8-e047-4952-b1fd-e8c14e05b583" alt="Visualisasi pemasangan alat ISOTRACK pada tiang listrik" class="rounded-xl shadow-2xl w-full">
                 </div>
-                <div class="w-full md:w-2/3 bg-white p-8 rounded-xl shadow-xl border border-gray-200/50 min-h-[280px] flex items-center">
-                    <div id="architecture-info">
+                <div class="space-y-4">
+                    <div id="architecture-info-box" class="bg-white p-6 rounded-xl shadow-xl border border-gray-200/50 min-h-[150px]">
                         <h3 id="info-title" class="text-2xl font-bold text-slate-800 mb-2"></h3>
                         <p id="info-text" class="text-gray-600"></p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="annotation-label p-3 bg-gray-50 rounded-lg cursor-pointer" data-target="1">
+                           <div class="flex items-center"><div class="annotation-dot w-3 h-3 bg-gray-300 rounded-full mr-3"></div><span>Panel Surya</span></div>
+                        </div>
+                        <div class="annotation-label p-3 bg-gray-50 rounded-lg cursor-pointer" data-target="2">
+                           <div class="flex items-center"><div class="annotation-dot w-3 h-3 bg-gray-300 rounded-full mr-3"></div><span>Sensor Suhu SHT40</span></div>
+                        </div>
+                         <div class="annotation-label p-3 bg-gray-50 rounded-lg cursor-pointer" data-target="3">
+                           <div class="flex items-center"><div class="annotation-dot w-3 h-3 bg-gray-300 rounded-full mr-3"></div><span>Panel Utama</span></div>
+                        </div>
+                         <div class="annotation-label p-3 bg-gray-50 rounded-lg cursor-pointer" data-target="4">
+                           <div class="flex items-center"><div class="annotation-dot w-3 h-3 bg-gray-300 rounded-full mr-3"></div><span>Konduktor Ukur</span></div>
+                        </div>
+                         <div class="annotation-label p-3 bg-gray-50 rounded-lg cursor-pointer" data-target="5">
+                           <div class="flex items-center"><div class="annotation-dot w-3 h-3 bg-gray-300 rounded-full mr-3"></div><span>Antenna</span></div>
+                        </div>
+                         <div class="annotation-label p-3 bg-gray-50 rounded-lg cursor-pointer" data-target="6">
+                           <div class="flex items-center"><div class="annotation-dot w-3 h-3 bg-gray-300 rounded-full mr-3"></div><span>Isolator</span></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -363,7 +365,6 @@
                 }
             });
 
-
             const tempSlider = document.getElementById('temp-slider');
             const humiditySlider = document.getElementById('humidity-slider');
             const tempLabel = document.getElementById('temp-label');
@@ -486,33 +487,34 @@
                 });
             });
             tabs[0].click();
-
-            const archSteps = document.querySelectorAll('.architecture-step');
-            const archInfo = {
-                '1': { title: 'Akuisisi Data di Lapangan', text: 'Unit sensor otonom merekam data arus bocor melalui resistor ukur dan ADC ADS1015, serta data suhu dan kelembapan dari sensor SHT40. Ditenagai oleh panel surya 5Wp, unit ini dirancang untuk operasi jangka panjang tanpa intervensi.' },
-                '2': { title: 'Transmisi Data Nirkabel', text: 'Data mentah dari node sensor dikirim secara efisien ke unit Gateway terdekat menggunakan protokol nirkabel ESP-NOW. Protokol ini ideal untuk komunikasi jarak pendek dengan konsumsi daya rendah, cocok untuk lingkungan lapangan.' },
-                '3': { title: 'Pengolahan dan Analisis Data', text: 'Gateway meneruskan data ke server pusat (Raspberry Pi). Di sini, skrip Python melakukan kalkulasi untuk mengubah data mentah menjadi metrik yang bermakna: nilai RMS dan THD (Total Harmonic Distortion) arus bocor.' },
-                '4': { title: 'Visualisasi dan Pemantauan', text: 'Hasil analisis disimpan dan disajikan pada dasbor web interaktif. Teknisi dan insinyur dapat mengakses data historis, melihat tren, dan menerima peringatan, memungkinkan pengambilan keputusan berbasis data dari lokasi mana pun.' }
+            
+            const archLabels = document.querySelectorAll('.annotation-label');
+            const archInfoData = {
+                '1': { title: 'Panel Surya', text: 'Menjadi sumber daya utama untuk seluruh sistem, memastikan operasi yang berkelanjutan dan mandiri tanpa bergantung pada catu daya eksternal.' },
+                '2': { title: 'Sensor Suhu SHT40', text: 'Mengukur suhu dan kelembapan lingkungan secara akurat. Data ini krusial untuk menganalisis bagaimana faktor cuaca mempengaruhi arus bocor.' },
+                '3': { title: 'Panel Utama (Node Sensor)', text: 'Otak dari perangkat. Di dalamnya terdapat mikrokontroler (Wemos D1), ADC (ADS1015), dan sirkuit catu daya yang mengelola dan memproses semua data dari sensor.' },
+                '4': { title: 'Konduktor Ukur', text: 'Dipasang di bawah isolator untuk menangkap seluruh arus bocor yang mengalir ke tanah, kemudian mengalirkannya melalui resistor ukur untuk diukur oleh sistem.' },
+                '5': { title: 'Antenna', text: 'Digunakan untuk mentransmisikan data yang telah diakuisisi dari node sensor ke unit gateway terdekat melalui protokol nirkabel ESP-NOW.' },
+                '6': { title: 'Isolator', text: 'Komponen utama jaringan yang dimonitor. Kesehatannya dinilai berdasarkan besarnya arus bocor yang mengalir pada permukaannya.' }
             };
             const infoTitle = document.getElementById('info-title');
             const infoText = document.getElementById('info-text');
 
-            const updateArchInfo = (step) => {
-                archSteps.forEach(s => s.classList.remove('active'));
-                const activeStep = document.querySelector(`.architecture-step[data-step="${step}"]`);
-                if(activeStep) activeStep.classList.add('active');
-
-                infoTitle.textContent = archInfo[step].title;
-                infoText.textContent = archInfo[step].text;
+            const updateArchInfo = (targetId) => {
+                archLabels.forEach(label => {
+                    label.classList.toggle('active', label.dataset.target === targetId);
+                });
+                infoTitle.textContent = archInfoData[targetId].title;
+                infoText.textContent = archInfoData[targetId].text;
             };
 
-            archSteps.forEach(step => {
-                step.addEventListener('click', () => {
-                    updateArchInfo(step.dataset.step);
+            archLabels.forEach(label => {
+                label.addEventListener('click', () => {
+                    updateArchInfo(label.dataset.target);
                 });
             });
-
-            updateArchInfo('1');
+            
+            updateArchInfo('3');
             updateSimulation();
         });
     </script>
