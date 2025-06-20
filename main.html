@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dasbor Laporan Proyek ISOTRACK</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Midnight Slate - Deep Blue/Gray, Cool Grays, with accents of Cyan and White -->
+    <!-- Application Structure Plan: A refined single-page dashboard. The structure remains thematic but with a more sophisticated layout. 1. A dynamic Hero section replaces the static overview. 2. A vertical, interactive flowchart for the System Architecture. 3. Test Results are presented in tabbed sections for better organization. 4. The Live Simulation dashboard is redesigned for a cleaner, more professional control panel feel. This structure enhances scannability and provides a more guided, premium user experience. -->
+    <!-- Visualization & Content Choices: 
+        1. Ringkasan Proyek: Goal=Inform/Engage. Method=Dynamic cards with icons and a key metric display. Justification=More visually engaging and scannable than plain text blocks.
+        2. Arsitektur Sistem: Goal=Organize/Explain. Method=Vertical interactive HTML/CSS flowchart. Interaction=Clicking a stage reveals details. Justification=A flowchart is more intuitive for representing a process flow than a linear diagram.
+        3. Hasil Pengujian: Goal=Compare/Analyze. Method=Chart.js Bar/Line charts within a tabbed interface. Interaction=Switching tabs to view different test results. Justification=Tabs de-clutter the interface, allowing users to focus on one comparison at a time.
+        4. Simulasi Data Live: Goal=Explore/Relate. Method=Redesigned Chart.js gauges and line chart. Interaction=Sliders control chart values. Justification=The core interactive element is retained but presented in a cleaner, more visually appealing control panel layout.
+        Library/Method=Tailwind CSS for layout, Chart.js for all data visualizations (Canvas-based).
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #F8F9FA;
+            color: #1A202C;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 350px;
+        }
+        @media (max-width: 768px) {
+            .chart-container {
+                height: 280px;
+            }
+        }
+        .nav-link {
+            position: relative;
+            transition: color 0.3s;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -4px;
+            left: 50%;
+            background-color: #0891B2; 
+            transition: all 0.3s;
+        }
+        .nav-link:hover, .active-link {
+            color: #0891B2;
+        }
+        .nav-link:hover::after, .active-link::after {
+            width: 100%;
+            left: 0;
+        }
+        .card-hover {
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .card-hover:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+        .tab-button {
+            transition: all 0.3s;
+        }
+        .active-tab {
+            background-color: #0891B2;
+            color: white;
+            box-shadow: 0 4px 14px 0 rgba(8, 145, 178, 0.38);
+        }
+        .architecture-step {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .architecture-step.active {
+            border-color: #0891B2;
+            background-color: #F0FDFA;
+        }
+        .architecture-line {
+            width: 2px;
+            background-color: #E2E8F0;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .slider-thumb::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #0891B2;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .slider-thumb::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #0891B2;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-white/90 backdrop-blur-md sticky top-0 z-50 shadow-md">
+        <nav class="container mx-auto px-6 py-3 flex justify-between items-center">
+            <div class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-slate-700 to-slate-900">ISOTRACK</div>
+            <div class="hidden md:flex items-center space-x-8">
+                <a href="#overview" class="nav-link text-gray-600 font-medium">Ringkasan</a>
+                <a href="#architecture" class="nav-link text-gray-600 font-medium">Arsitektur</a>
+                <a href="#results" class="nav-link text-gray-600 font-medium">Hasil Uji</a>
+                <a href="#simulation" class="nav-link text-gray-600 font-medium">Simulasi</a>
+            </div>
+            <div class="md:hidden">
+                <select id="mobile-nav" class="w-full bg-white border border-gray-300 rounded-md p-2 text-sm">
+                    <option value="#overview">Ringkasan</option>
+                    <option value="#architecture">Arsitektur</option>
+                    <option value="#results">Hasil Uji</option>
+                    <option value="#simulation">Simulasi</option>
+                </select>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-6 py-10 md:py-16">
+
+        <section id="overview" class="mb-20 md:mb-32 scroll-mt-20">
+            <div class="text-center max-w-4xl mx-auto">
+                <h1 class="text-4xl md:text-6xl font-extrabold text-slate-900 mb-4 leading-tight">Sistem Cerdas Pemantauan Performa Isolator</h1>
+                <p class="text-lg text-gray-600 mb-10">
+                    Sebuah disrupsi digital pada pemeliharaan jaringan listrik, mentransformasi data mentah menjadi wawasan prediktif. Proyek ini mendemonstrasikan kekuatan IoT dalam meningkatkan keandalan dan keamanan infrastruktur kelistrikan.
+                </p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+                <div class="card-hover bg-white p-6 rounded-xl shadow-lg border border-gray-200/50">
+                    <h3 class="text-2xl font-bold text-slate-800 mb-3">Masalah Mendasar</h3>
+                    <p class="text-gray-600">Kerusakan isolator akibat faktor lingkungan tropis adalah ancaman laten. Metode pemantauan manual yang reaktif, mahal, dan berisiko tidak lagi memadai untuk jaringan modern.</p>
+                </div>
+                <div class="card-hover bg-gradient-to-br from-slate-800 to-slate-900 text-white p-6 rounded-xl shadow-2xl">
+                    <h3 class="text-2xl font-bold mb-3">Solusi: ISOTRACK</h3>
+                    <p class="text-gray-300">Sistem akuisisi data otonom yang secara kontinu mengukur parameter kritis: arus bocor (RMS & THD), suhu, dan kelembapan, lalu menyajikannya secara *real-time*.</p>
+                </div>
+                <div class="card-hover bg-white p-6 rounded-xl shadow-lg border border-gray-200/50">
+                     <h3 class="text-2xl font-bold text-slate-800 mb-3">Keunggulan Strategis</h3>
+                    <p class="text-gray-600">Dari reaktif menjadi prediktif. Memberikan data untuk deteksi dini, optimalisasi jadwal pemeliharaan, dan peningkatan keamanan fundamental pada infrastruktur jaringan.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="architecture" class="mb-20 md:mb-32 scroll-mt-20">
+            <h2 class="text-4xl font-bold text-center text-slate-900 mb-4">Arsitektur Aliran Data</h2>
+            <p class="text-center text-gray-600 mb-12 max-w-2xl mx-auto">Setiap langkah dalam sistem ISOTRACK dirancang untuk efisiensi dan keandalan, dari pengambilan data di lapangan hingga visualisasi interaktif. Klik setiap tahap untuk melihat detail perannya.</p>
+            <div class="flex flex-col md:flex-row gap-8">
+                <div class="w-full md:w-1/3">
+                    <div id="architecture-steps-container" class="space-y-4">
+                        <div class="architecture-step p-4 border-2 border-gray-200 rounded-lg" data-step="1">
+                            <span class="font-bold text-cyan-600">Tahap 1: Akuisisi Data</span>
+                            <p class="text-sm text-gray-500">Node Sensor di Lapangan</p>
+                        </div>
+                         <div class="architecture-step p-4 border-2 border-gray-200 rounded-lg" data-step="2">
+                            <span class="font-bold text-cyan-600">Tahap 2: Transmisi Nirkabel</span>
+                            <p class="text-sm text-gray-500">ESP-NOW ke Gateway</p>
+                        </div>
+                         <div class="architecture-step p-4 border-2 border-gray-200 rounded-lg" data-step="3">
+                            <span class="font-bold text-cyan-600">Tahap 3: Pengolahan Data</span>
+                            <p class="text-sm text-gray-500">Kalkulasi di Server</p>
+                        </div>
+                         <div class="architecture-step p-4 border-2 border-gray-200 rounded-lg" data-step="4">
+                            <span class="font-bold text-cyan-600">Tahap 4: Visualisasi</span>
+                            <p class="text-sm text-gray-500">Dasbor Pengguna</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="w-full md:w-2/3 bg-white p-8 rounded-xl shadow-xl border border-gray-200/50 min-h-[280px] flex items-center">
+                    <div id="architecture-info">
+                        <h3 id="info-title" class="text-2xl font-bold text-slate-800 mb-2"></h3>
+                        <p id="info-text" class="text-gray-600"></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="results" class="mb-20 md:mb-32 scroll-mt-20">
+            <h2 class="text-4xl font-bold text-center text-slate-900 mb-12">Validasi Kinerja & Akurasi</h2>
+             <div class="flex justify-center mb-8">
+                <div class="flex space-x-2 bg-gray-200 p-1.5 rounded-full">
+                    <button class="tab-button px-4 py-2 text-sm font-semibold rounded-full" data-target="rms-chart-container">Akurasi RMS</button>
+                    <button class="tab-button px-4 py-2 text-sm font-semibold rounded-full" data-target="thd-chart-container">Akurasi THD</button>
+                    <button class="tab-button px-4 py-2 text-sm font-semibold rounded-full" data-target="env-chart-container">Sensor Lingkungan</button>
+                </div>
+            </div>
+            <div class="bg-white p-6 md:p-8 rounded-xl shadow-xl border border-gray-200/50">
+                <div id="rms-chart-container" class="tab-content">
+                    <h3 class="text-2xl font-bold text-center mb-2">Akurasi Pengukuran Arus Bocor (RMS)</h3>
+                    <p class="text-center text-gray-600 mb-6">Perbandingan nilai RMS antara ISOTRACK dan instrumen referensi menunjukkan korelasi kuat, memvalidasi keandalan sensor.</p>
+                    <div class="chart-container"><canvas id="rmsCurrentChart"></canvas></div>
+                </div>
+                <div id="thd-chart-container" class="hidden tab-content">
+                    <h3 class="text-2xl font-bold text-center mb-2">Akurasi Analisis THD</h3>
+                    <p class="text-center text-gray-600 mb-6">Tantangan pengukuran THD pada sinyal level mikroampere terlihat dari deviasi. Namun, alat tetap mampu mendeteksi tren distorsi harmonik.</p>
+                    <div class="chart-container"><canvas id="thdChart"></canvas></div>
+                </div>
+                <div id="env-chart-container" class="hidden tab-content">
+                    <h3 class="text-2xl font-bold text-center mb-2">Akurasi Sensor Lingkungan</h3>
+                     <p class="text-center text-gray-600 mb-6">Sensor Suhu (SHT40) menunjukkan akurasi sangat tinggi (MAPE < 1%), krusial untuk analisis kontekstual.</p>
+                    <div class="chart-container"><canvas id="tempChart"></canvas></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="simulation" class="scroll-mt-20">
+            <h2 class="text-4xl font-bold text-center text-slate-900 mb-4">Dasbor Simulasi Interaktif</h2>
+            <p class="text-center text-gray-600 mb-12 max-w-3xl mx-auto">Pahami hubungan antara faktor lingkungan dan kesehatan isolator. Geser slider untuk menyimulasikan perubahan cuaca dan lihat dampaknya secara langsung pada arus bocor dan status peringatan.</p>
+            
+            <div class="bg-white p-6 md:p-8 rounded-xl shadow-xl border border-gray-200/50">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-1 flex flex-col gap-6">
+                        <div id="status-card" class="flex flex-col items-center justify-center p-6 rounded-lg bg-green-50 border-2 border-green-200 transition-all duration-300 h-40">
+                            <h4 id="status-title" class="text-sm font-bold text-green-700 tracking-wider uppercase">Status Isolator</h4>
+                            <p id="status-text" class="text-4xl font-extrabold text-green-600">NORMAL</p>
+                        </div>
+                        <div class="p-6 rounded-lg bg-gray-50 border">
+                            <h4 class="font-semibold text-gray-600 mb-4">Kontrol Lingkungan</h4>
+                            <div class="space-y-4">
+                                <div>
+                                    <label for="temp-slider" class="flex justify-between font-medium text-sm text-gray-700"><span>Suhu</span><span id="temp-label" class="font-bold">30°C</span></label>
+                                    <input id="temp-slider" type="range" min="25" max="45" value="30" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider-thumb">
+                                </div>
+                                <div>
+                                    <label for="humidity-slider" class="flex justify-between font-medium text-sm text-gray-700"><span>Kelembapan</span><span id="humidity-label" class="font-bold">60%</span></label>
+                                    <input id="humidity-slider" type="range" min="50" max="98" value="60" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider-thumb">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-2 p-6 rounded-lg bg-gray-50 border">
+                         <h4 class="font-semibold text-gray-600 mb-2">Tren Arus Bocor (Live)</h4>
+                         <div class="chart-container" style="height: 320px;"><canvas id="liveLeakageChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+    
+    <footer class="bg-white mt-16 border-t">
+        <div class="container mx-auto py-8 px-6 text-center text-gray-500 text-sm">
+            <p>Dasbor interaktif ini merupakan visualisasi dari Laporan Tugas Akhir "Desain dan Implementasi Sistem Akuisisi Data serta Analisis THD Arus Bocor Isolator untuk Monitoring Performa Isolator pada Jaringan Listrik Berbasis IoT" oleh Muhammad Ahsan Fillah Abadi, Departemen Teknik Elektro, Universitas Diponegoro, 2025.</p>
+            <p class="mt-2">Dikembangkan oleh Google Gemini.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const chartFontColor = '#374151';
+
+            const rmsTestData = {
+                labels: ['10.6', '11.3', '12.6', '13.3', '14.4', '15.6', '16.5', '17.4', '18.2', '19.3', '20.7'],
+                alat: [0.0246, 0.0258, 0.0294, 0.0305, 0.0328, 0.0353, 0.0371, 0.0397, 0.0404, 0.0435, 0.0464],
+                referensi: [0.0230, 0.0243, 0.0284, 0.0297, 0.0311, 0.0338, 0.0357, 0.0379, 0.0392, 0.0419, 0.0446]
+            };
+
+            const thdTestData = {
+                labels: ['10.6', '11.3', '12.6', '13.3', '14.4', '15.6', '16.5', '17.4', '18.2', '19.3', '20.7'],
+                alat: [1.56, 1.98, 3.16, 3.18, 3.49, 3.48, 4.58, 5.05, 4.94, 2.41, 4.50],
+                referensi: [5.42, 5.65, 5.66, 5.35, 5.35, 5.47, 5.29, 5.62, 5.59, 5.87, 5.64]
+            };
+            
+            const tempTestData = {
+                labels: ['28.0', '30.0', '32.0', '34.0', '36.0'],
+                alat: [28.2, 30.3, 31.8, 34.4, 36.1],
+                referensi: [28.0, 30.0, 32.0, 34.0, 36.0]
+            };
+
+            Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+            Chart.defaults.color = chartFontColor;
+
+            const createBarChart = (ctx, labels, data1, data2, label1, label2, yTitle, xTitle) => {
+                return new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: label1,
+                                data: data1,
+                                backgroundColor: '#06B6D4',
+                                borderColor: '#0891B2',
+                                borderWidth: 2,
+                                borderRadius: 4,
+                            },
+                            {
+                                label: label2,
+                                data: data2,
+                                backgroundColor: '#E2E8F0',
+                                borderColor: '#94A3B8',
+                                borderWidth: 2,
+                                borderRadius: 4,
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'top' },
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: { display: true, text: yTitle, font: { weight: '600' } },
+                                grid: { color: '#F1F5F9' }
+                            },
+                            x: {
+                                title: { display: true, text: xTitle, font: { weight: '600' } },
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                });
+            };
+
+            const rmsChart = createBarChart(document.getElementById('rmsCurrentChart').getContext('2d'), rmsTestData.labels, rmsTestData.alat, rmsTestData.referensi, 'ISOTRACK (mA)', 'Referensi (mA)', 'RMS Arus (mA)', 'Tegangan Uji (kV)');
+            const thdChart = createBarChart(document.getElementById('thdChart').getContext('2d'), thdTestData.labels, thdTestData.alat, thdTestData.referensi, 'ISOTRACK (%)', 'Referensi (%)', 'THD (%)', 'Tegangan Uji (kV)');
+            
+             const tempLineChart = new Chart(document.getElementById('tempChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: tempTestData.labels,
+                    datasets: [{
+                        label: 'SHT40 (°C)',
+                        data: tempTestData.alat,
+                        borderColor: '#0891B2',
+                        backgroundColor: 'rgba(8, 145, 178, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#0891B2',
+                        pointRadius: 4,
+                    },{
+                        label: 'Referensi (°C)',
+                        data: tempTestData.referensi,
+                        borderColor: '#94A3B8',
+                        backgroundColor: 'rgba(148, 163, 184, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#94A3B8',
+                        pointRadius: 4,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                         y: { beginAtZero: false, title: { display: true, text: 'Suhu (°C)', font: { weight: '600' } } },
+                         x: { title: { display: true, text: 'Titik Data Uji', font: { weight: '600' } } }
+                    }
+                }
+            });
+
+
+            const tempSlider = document.getElementById('temp-slider');
+            const humiditySlider = document.getElementById('humidity-slider');
+            const tempLabel = document.getElementById('temp-label');
+            const humidityLabel = document.getElementById('humidity-label');
+            const statusCard = document.getElementById('status-card');
+            const statusText = document.getElementById('status-text');
+            const statusTitle = document.getElementById('status-title');
+
+            const liveChartCtx = document.getElementById('liveLeakageChart').getContext('2d');
+            const liveChart = new Chart(liveChartCtx, {
+                type: 'line',
+                data: {
+                    labels: Array(50).fill(''),
+                    datasets: [{
+                        label: 'Arus Bocor (mA)',
+                        data: Array(50).fill(0.05),
+                        borderColor: '#0891B2',
+                        backgroundColor: 'rgba(8, 145, 178, 0.1)',
+                        borderWidth: 2.5,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, max: 1.2, title: { display: true, text: 'Arus Bocor (mA)' } },
+                        x: { display: false }
+                    },
+                     plugins: { legend: { display: false }, tooltip: { enabled: false } }
+                }
+            });
+            
+            function updateSimulation() {
+                const temp = parseFloat(tempSlider.value);
+                const humidity = parseFloat(humiditySlider.value);
+
+                tempLabel.textContent = `${temp}°C`;
+                humidityLabel.textContent = `${humidity}%`;
+
+                let baseCurrent = 0.03;
+                let humidityFactor = (Math.max(0, humidity - 70) / 30) ** 2.8; 
+                let tempFactor = (Math.max(0, temp - 30) / 15) * 0.05;
+                let noise = (Math.random() - 0.5) * 0.03;
+
+                let rmsCurrent = baseCurrent + (humidityFactor * 1.1) + tempFactor + noise;
+                rmsCurrent = Math.max(0.02, rmsCurrent);
+                
+                liveChart.data.datasets[0].data.shift();
+                liveChart.data.datasets[0].data.push(rmsCurrent);
+                liveChart.update('none');
+
+                statusCard.className = 'flex flex-col items-center justify-center p-6 rounded-lg border-2 transition-all duration-300 h-40';
+                if (rmsCurrent > 0.8) {
+                    statusCard.classList.add('bg-red-50', 'border-red-500');
+                    statusText.textContent = 'BAHAYA';
+                    statusText.className = 'text-4xl font-extrabold text-red-600';
+                    statusTitle.className = 'text-sm font-bold text-red-700 tracking-wider uppercase';
+                } else if (rmsCurrent > 0.15) {
+                    statusCard.classList.add('bg-yellow-50', 'border-yellow-500');
+                    statusText.textContent = 'PERINGATAN';
+                    statusText.className = 'text-3xl font-extrabold text-yellow-600';
+                    statusTitle.className = 'text-sm font-bold text-yellow-700 tracking-wider uppercase';
+                } else {
+                    statusCard.classList.add('bg-green-50', 'border-green-500');
+                    statusText.textContent = 'NORMAL';
+                    statusText.className = 'text-4xl font-extrabold text-green-600';
+                    statusTitle.className = 'text-sm font-bold text-green-700 tracking-wider uppercase';
+                }
+            }
+
+            tempSlider.addEventListener('input', updateSimulation);
+            humiditySlider.addEventListener('input', updateSimulation);
+
+            const scrollNav = (targetId) => {
+                const target = document.querySelector(targetId);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            };
+
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    scrollNav(this.getAttribute('href'));
+                });
+            });
+
+            document.getElementById('mobile-nav').addEventListener('change', function(e) {
+                scrollNav(e.target.value);
+            });
+            
+            const sections = document.querySelectorAll('section');
+            const navLinks = document.querySelectorAll('.nav-link');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const id = entry.target.getAttribute('id');
+                        navLinks.forEach(link => {
+                            link.classList.toggle('active-link', link.getAttribute('href') === `#${id}`);
+                        });
+                    }
+                });
+            }, { rootMargin: '-30% 0px -70% 0px' });
+            sections.forEach(section => observer.observe(section));
+            
+            const tabs = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(item => item.classList.remove('active-tab'));
+                    tab.classList.add('active-tab');
+
+                    const target = tab.dataset.target;
+                    tabContents.forEach(content => {
+                        content.classList.toggle('hidden', content.id !== target);
+                    });
+                });
+            });
+            tabs[0].click();
+
+            const archSteps = document.querySelectorAll('.architecture-step');
+            const archInfo = {
+                '1': { title: 'Akuisisi Data di Lapangan', text: 'Unit sensor otonom merekam data arus bocor melalui resistor ukur dan ADC ADS1015, serta data suhu dan kelembapan dari sensor SHT40. Ditenagai oleh panel surya 5Wp, unit ini dirancang untuk operasi jangka panjang tanpa intervensi.' },
+                '2': { title: 'Transmisi Data Nirkabel', text: 'Data mentah dari node sensor dikirim secara efisien ke unit Gateway terdekat menggunakan protokol nirkabel ESP-NOW. Protokol ini ideal untuk komunikasi jarak pendek dengan konsumsi daya rendah, cocok untuk lingkungan lapangan.' },
+                '3': { title: 'Pengolahan dan Analisis Data', text: 'Gateway meneruskan data ke server pusat (Raspberry Pi). Di sini, skrip Python melakukan kalkulasi untuk mengubah data mentah menjadi metrik yang bermakna: nilai RMS dan THD (Total Harmonic Distortion) arus bocor.' },
+                '4': { title: 'Visualisasi dan Pemantauan', text: 'Hasil analisis disimpan dan disajikan pada dasbor web interaktif. Teknisi dan insinyur dapat mengakses data historis, melihat tren, dan menerima peringatan, memungkinkan pengambilan keputusan berbasis data dari lokasi mana pun.' }
+            };
+            const infoTitle = document.getElementById('info-title');
+            const infoText = document.getElementById('info-text');
+
+            const updateArchInfo = (step) => {
+                archSteps.forEach(s => s.classList.remove('active'));
+                const activeStep = document.querySelector(`.architecture-step[data-step="${step}"]`);
+                if(activeStep) activeStep.classList.add('active');
+
+                infoTitle.textContent = archInfo[step].title;
+                infoText.textContent = archInfo[step].text;
+            };
+
+            archSteps.forEach(step => {
+                step.addEventListener('click', () => {
+                    updateArchInfo(step.dataset.step);
+                });
+            });
+
+            updateArchInfo('1');
+            updateSimulation();
+        });
+    </script>
+</body>
+</html>
